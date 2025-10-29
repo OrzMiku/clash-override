@@ -108,15 +108,6 @@ const CONFIG = {
     "route-exclude-address": ["172.26.0.0/16", "172.25.0.0/16"],
   },
 
-  /** NTP 配置 */
-  ntp: {
-    enable: true,
-    "write-to-system": true,
-    server: "time.apple.com",
-    port: 123,
-    interval: 30,
-  },
-
   /** 规则提供者配置：预定义的路由规则集 */
   ruleProviders: {
     /** 广告拦截域名列表 */
@@ -463,7 +454,7 @@ function buildProxyGroups(
 }
 
 /**
- * 应用覆写配置：设置 DNS、TUN、NTP、规则等
+ * 应用覆写配置：设置 DNS、TUN、规则等
  * @param {Object} config - 配置对象
  * @param {Object} flags - 功能标志对象
  */
@@ -501,7 +492,6 @@ function applyOverrides(config, flags) {
   config["geo-update-interval"] = CONFIG.geodata.updateInterval;
   config["geox-url"] = CONFIG.geoxURL;
   config.tun = CONFIG.tun;
-  config.ntp = CONFIG.ntp;
   config["rule-providers"] = CONFIG.ruleProviders;
   config.sniffer = CONFIG.sniffer;
 
