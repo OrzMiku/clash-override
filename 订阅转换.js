@@ -4,6 +4,8 @@
 - full: 输出完整配置（适合纯内核启动，默认 false）
 - keepalive: 启用 tcp-keep-alive（默认 false）
 - threshold: 国家节点数量小于该值时不显示分组 (默认 0)
+- regiongrouponly: 主代理组只包含地区分组，不包含所有节点 (默认 false)
+- regiongrouptype: 地区分组类型，支持 select、url-test、load-balance、fallback (默认 select)
 */
 
 // =================================================================
@@ -238,6 +240,8 @@ function main(config) {
     fakeIPEnabled,
     quicEnabled,
     countryThreshold,
+    regionGroupOnly,
+    regionGroupType,
   } = buildFeatureFlags(rawArgs);
 
   // 从配置提供者加载代理节点
@@ -248,7 +252,7 @@ function main(config) {
   // 过滤代理节点
   filterProxies(config);
   // 构建代理组
-  buildProxyGroups(config);
+  buildProxyGroups(config, countryThreshold, regionGroupOnly, regionGroupType);
   // 应用覆写配置
   applyOverrides(config, {
     loadBalance,
@@ -305,13 +309,10 @@ function parseNumber(value, defaultValue = 0) {
  */
 function buildFeatureFlags(args) {
   const spec = {
-    loadbalance: "loadBalance",
-    landing: "landing",
     ipv6: "ipv6Enabled",
     full: "fullConfig",
     keepalive: "keepAliveEnabled",
-    fakeip: "fakeIPEnabled",
-    quic: "quicEnabled",
+    regiongrouponly: "regionGroupOnly",
   };
 
   const flags = Object.entries(spec).reduce((acc, [sourceKey, targetKey]) => {
@@ -321,6 +322,9 @@ function buildFeatureFlags(args) {
 
   // 单独处理数字参数
   flags.countryThreshold = parseNumber(args.threshold, 0);
+
+  // 单独处理字符串参数
+  flags.regionGroupType = args.regiongrouptype || "select";
 
   return flags;
 }
@@ -376,11 +380,23 @@ function filterProxies(config) {
 /**
  * 构建代理组：根据地区自动分组
  * @param {Object} config - 配置对象，包含 proxies 数组
+ * @param {number} countryThreshold - 国家节点数量小于该值时不显示分组
+ * @param {boolean} regionGroupOnly - 主代理组只包含地区分组，不包含所有节点
+ * @param {string} regionGroupType - 地区分组类型（select、url-test、load-balance、fallback）
  * @returns {void} 直接修改 config 对象的 proxy-groups 属性
  */
-function buildProxyGroups(config) {
+function buildProxyGroups(
+  config,
+  countryThreshold = 0,
+  regionGroupOnly = false,
+  regionGroupType = "select"
+) {
   // 如果没有代理节点，直接返回
   if (!config.proxies?.length) return;
+
+  // 验证 regionGroupType 是否有效
+  const validTypes = ["select", "url-test", "load-balance", "fallback"];
+  const groupType = validTypes.includes(regionGroupType) ? regionGroupType : "select";
 
   // 根据配置的地区创建代理组
   const regionGroups = CONFIG.regions
@@ -393,15 +409,22 @@ function buildProxyGroups(config) {
       // 如果该地区没有匹配的节点，返回 null
       if (!proxies.length) return null;
 
+      // 如果节点数量小于阈值，不显示该分组
+      if (countryThreshold > 0 && proxies.length < countryThreshold)
+        return null;
+
+      // 使用参数指定的类型，如果没有指定则使用地区配置中的类型
+      const finalType = groupType || region.type || "select";
+
       // 创建代理组基础配置
       const base = {
         name: region.name,
-        type: region.type || "select",
+        type: finalType,
         icon: `https://cdn.jsdelivr.net/gh/Orz-3/mini@master/Color/${region.code}.png`,
         proxies,
       };
       // 获取该类型的配置模板
-      const typeConfig = PROXY_GROUP_CONFIGS[region.type];
+      const typeConfig = PROXY_GROUP_CONFIGS[finalType];
 
       // 合并基础配置和类型特定配置
       return typeConfig
@@ -417,6 +440,15 @@ function buildProxyGroups(config) {
     })
     .filter(Boolean);
 
+  // 构建主代理组的 proxies 列表
+  const mainGroupProxies = regionGroupOnly
+    ? [...regionGroups.map((g) => g.name), "DIRECT"]
+    : [
+        ...regionGroups.map((g) => g.name),
+        "DIRECT",
+        ...config.proxies.map((p) => p.name),
+      ];
+
   // 创建完整的代理组列表（主代理组 + 地区代理组）
   config["proxy-groups"] = [
     {
@@ -424,11 +456,7 @@ function buildProxyGroups(config) {
       name: CONFIG.proxyGroup.mainGroupName,
       type: "select",
       icon: "https://cdn.jsdelivr.net/gh/Orz-3/mini@master/Color/Global.png",
-      proxies: [
-        ...regionGroups.map((g) => g.name),
-        "DIRECT",
-        ...config.proxies.map((p) => p.name),
-      ],
+      proxies: mainGroupProxies,
     },
     ...regionGroups,
   ];
