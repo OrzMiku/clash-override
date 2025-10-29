@@ -1,2 +1,3 @@
 # clash-override
-Clash 自用覆写
+
+Clash 自用覆写脚本
