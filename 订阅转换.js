@@ -257,7 +257,7 @@ function filterProxies(config) {
   // 使用正则表达式过滤代理节点
   // 只保留不包含 excludeKeywords 中指定关键词的节点
   config.proxies = config.proxies.filter((proxy) =>
-    CONFIG.nodeFilter.excludeKeywords.test(proxy.name),
+    CONFIG.nodeFilter.excludeKeywords.test(proxy.name)
   );
 }
 
@@ -284,6 +284,7 @@ function buildProxyGroups(config) {
       const base = {
         name: region.name, // 代理组名称
         type: region.type || "select", // 代理组类型（默认 select）
+        icon: `https://cdn.jsdelivr.net/gh/Orz-3/mini@master/Color/${region.code}.png`, // 代理组图标（根据地区代码）
         proxies, // 包含的节点列表
       };
       // 获取该类型的配置模板
@@ -296,7 +297,7 @@ function buildProxyGroups(config) {
             ...typeConfig(
               CONFIG.proxyGroup.testUrl, // 测试 URL
               CONFIG.proxyGroup.testInterval, // 测试间隔
-              CONFIG.proxyGroup.loadBalanceStrategy, // 负载均衡策略
+              CONFIG.proxyGroup.loadBalanceStrategy // 负载均衡策略
             ),
           }
         : base;
@@ -309,6 +310,7 @@ function buildProxyGroups(config) {
       // 主代理组：用于选择具体地区或节点
       name: CONFIG.proxyGroup.mainGroupName,
       type: "select", // 手动选择模式
+      icon: "https://cdn.jsdelivr.net/gh/Orz-3/mini@master/Color/Global.png", // 代理组图标
       proxies: [
         ...regionGroups.map((g) => g.name), // 所有地区组
         "DIRECT", // 直连选项
