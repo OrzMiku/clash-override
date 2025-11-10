@@ -87,9 +87,9 @@ function buildProxyGroups(proxies, regions, main_group_name) {
     if (!region_proxies.length) return null;
     const base = {
       name: region.name,
-      type: "select",
+      type: "url-test",
+      interval: 600,
       icon: `https://cdn.jsdelivr.net/gh/Orz-3/mini@master/Color/${region.code}.png`,
-      proxies: region_proxies.map((proxy) => proxy.name),
     };
     return base;
   });
