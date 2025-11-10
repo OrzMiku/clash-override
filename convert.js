@@ -90,6 +90,7 @@ function buildProxyGroups(proxies, regions, main_group_name) {
       type: "url-test",
       interval: 600,
       icon: `https://cdn.jsdelivr.net/gh/Orz-3/mini@master/Color/${region.code}.png`,
+      proxies: region_proxies.map((proxy) => proxy.name),
     };
     return base;
   });
@@ -104,7 +105,6 @@ function buildProxyGroups(proxies, regions, main_group_name) {
     proxies: [
       ...valid_region_groups.map((group) => group.name),
       "DIRECT",
-      ...proxies.map((proxy) => proxy.name),
     ],
   };
 
