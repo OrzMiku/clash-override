@@ -104,7 +104,7 @@ function buildProxyGroups(proxies, regions, main_group_name) {
     proxies: [
       ...valid_region_groups.map((group) => group.name),
       "DIRECT",
-      ...proxies.map((proxy) => proxy.name),
+      // ...proxies.map((proxy) => proxy.name),
     ],
   };
 
@@ -156,6 +156,12 @@ function buildRules(main_group_name) {
         url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt",
         path: "./ruleset/applications.yaml",
       },
+      customProxy: {
+        type: "http",
+        behavior: "domain",
+        url: "https://cdn.jsdelivr.net/gh/OrzMiku/clash-override@master/rules/custom-proxy.yaml",
+        path: "./ruleset/custom-proxy.yaml",
+      },
     },
     rules: [
       "RULE-SET,applications,DIRECT",
@@ -163,6 +169,7 @@ function buildRules(main_group_name) {
       "DOMAIN,yacd.haishan.me,DIRECT",
       "RULE-SET,private,DIRECT",
       "RULE-SET,reject,REJECT",
+      `RULE-SET,customProxy,${main_group_name}`,
       `RULE-SET,proxy,${main_group_name}`,
       "RULE-SET,direct,DIRECT",
       "RULE-SET,lancidr,DIRECT",

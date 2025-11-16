@@ -6,15 +6,11 @@ proxies+:
 
 proxy-groups+:
   - name: aTrust
-    type: select
+    type: url-test
     proxies:
       - socks5
-  # - name: aTrust
-  #   type: url-test
-  #   proxies:
-  #     - socks5
-  #   interval: 60
-  #   url: http://xxx
+    interval: 60
+    url: http://172.25.23.186:8080
 
 +rules:
   - IP-CIDR,172.25.0.0/16,aTrust
