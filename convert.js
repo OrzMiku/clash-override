@@ -3,6 +3,12 @@
 // =================================================================
 
 const DEBUG = false;
+
+const FEATURE = {
+  DNS: true,
+  INCLUDE_ALL_PROXIES_IN_MAIN_GROUP: false,
+};
+
 const MAIN_GROUP_NAME = "节点选择";
 const REGIONS = [
   { code: "HK", name: "香港", regex: /(香港|HK|Hong Kong|🇭🇰)/i },
@@ -35,15 +41,20 @@ function main(config) {
   const proxy_groups = buildProxyGroups(
     filtered_proxies,
     REGIONS,
-    MAIN_GROUP_NAME
+    MAIN_GROUP_NAME,
+    FEATURE.INCLUDE_ALL_PROXIES_IN_MAIN_GROUP
   );
   const rules = buildRules(MAIN_GROUP_NAME);
 
+  const dns = FEATURE.DNS ? buildDns() : {};
+
   const result = {
+    ...dns,
     proxies: filtered_proxies,
     ["proxy-groups"]: proxy_groups,
     ...rules,
   };
+
   if (DEBUG) console.log(result);
   return result;
 }
@@ -51,6 +62,28 @@ function main(config) {
 // =================================================================
 // = utils
 // =================================================================
+
+function buildDns() {
+  return {
+    dns: {
+      enable: true,
+      "respect-rules": true,
+      "default-nameserver": ["tls://223.5.5.5", "tls://223.6.6.6"],
+      nameserver: [
+        "https://cloudflare-dns.com/dns-query",
+        "https://dns.google/dns-query",
+      ],
+      "proxy-server-nameserver": [
+        "https://dns.alidns.com/dns-query",
+        "https://doh.pub/dns-query",
+      ],
+      "direct-nameserver": [
+        "https://dns.alidns.com/dns-query",
+        "https://doh.pub/dns-query",
+      ],
+    },
+  };
+}
 
 function filterProxies(proxies, regex) {
   return proxies.filter((proxy) => regex.test(proxy.name));
@@ -80,7 +113,12 @@ function buildProxies(config) {
   return proxies;
 }
 
-function buildProxyGroups(proxies, regions, main_group_name) {
+function buildProxyGroups(
+  proxies,
+  regions,
+  main_group_name,
+  include_all_proxies_in_main_group
+) {
   // region groups
   const region_groups = regions.map((region) => {
     const region_proxies = filterProxies(proxies, region.regex);
@@ -104,7 +142,9 @@ function buildProxyGroups(proxies, regions, main_group_name) {
     proxies: [
       ...valid_region_groups.map((group) => group.name),
       "DIRECT",
-      // ...proxies.map((proxy) => proxy.name),
+      ...(include_all_proxies_in_main_group
+        ? proxies.map((proxy) => proxy.name)
+        : []),
     ],
   };
 
