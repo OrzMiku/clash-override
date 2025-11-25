@@ -4,8 +4,12 @@
 
 const DEBUG = false;
 
-const FEATURE = {
-  DNS: true,
+const FEATURES = {
+  COMMON: true, // common settings
+  DNS: true, // dns settings
+  TUN: false, // tun settings
+  SNIFFER: true, // sniffer settings
+  // whether to include all proxies in the main group
   INCLUDE_ALL_PROXIES_IN_MAIN_GROUP: false,
 };
 
@@ -36,22 +40,28 @@ const FILTER_REGEX =
 // =================================================================
 
 function main(config) {
-  const proxies = buildProxies(config);
-  const filtered_proxies = filterProxies(proxies, FILTER_REGEX);
+  const common = FEATURES.COMMON ? buildCommonSettings() : {};
+  const dns = FEATURES.DNS ? buildDns() : {};
+  const tun = FEATURES.TUN ? buildTun() : {};
+  const sniffer = FEATURES.SNIFFER ? buildSniffer() : {};
+
+  const proxies = filterProxies(buildProxies(config), FILTER_REGEX);
   const proxy_groups = buildProxyGroups(
-    filtered_proxies,
+    proxies,
     REGIONS,
     MAIN_GROUP_NAME,
-    FEATURE.INCLUDE_ALL_PROXIES_IN_MAIN_GROUP
+    FEATURES.INCLUDE_ALL_PROXIES_IN_MAIN_GROUP
   );
+
   const rules = buildRules(MAIN_GROUP_NAME);
 
-  const dns = FEATURE.DNS ? buildDns() : {};
-
   const result = {
+    ...common,
+    ...tun,
     ...dns,
-    proxies: filtered_proxies,
-    ["proxy-groups"]: proxy_groups,
+    ...sniffer,
+    proxies,
+    "proxy-groups": proxy_groups,
     ...rules,
   };
 
@@ -62,6 +72,42 @@ function main(config) {
 // =================================================================
 // = utils
 // =================================================================
+
+function buildCommonSettings() {
+  return {
+    "mixed-port": 7890,
+    "allow-lan": false,
+    "log-level": "info",
+    "find-process-mode": "always",
+    "bind-address": "*",
+    profile: {
+      "store-selected": true,
+      "store-fake-ip": true,
+    },
+    "geo-auto-update": true,
+    "geo-update-interval": 24,
+    "geox-url": {
+      gepip:
+        "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip-lite.dat",
+      geosite:
+        "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat",
+      mmdb: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.metadb",
+      asn: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb",
+    },
+  };
+}
+
+function buildTun() {
+  return {
+    tun: {
+      enable: true,
+      device: "mohomo",
+      stack: "mixed",
+      "dns-hijack": ["any:53"],
+      mtu: 1500,
+    },
+  };
+}
 
 function buildDns() {
   return {
@@ -80,6 +126,41 @@ function buildDns() {
       "direct-nameserver": [
         "https://dns.alidns.com/dns-query",
         "https://doh.pub/dns-query",
+      ],
+    },
+  };
+}
+
+function buildSniffer() {
+  return {
+    sniffer: {
+      enable: true,
+      "parse-pure-ip": true,
+      "force-dns-mapping": true,
+      "override-destination": false,
+      sniff: {
+        HTTP: {
+          ports: [80, 443],
+          "override-destination": false,
+        },
+        TLS: {
+          ports: [443],
+        },
+      },
+      "skip-domain": ["+.push.apple.com"],
+      "skip-dst-address": [
+        "91.105.192.0/23",
+        "91.108.4.0/22",
+        "91.108.8.0/21",
+        "91.108.16.0/21",
+        "91.108.56.0/22",
+        "95.161.64.0/20",
+        "149.154.160.0/20",
+        "185.76.151.0/24",
+        "2001:67c:4e8::/48",
+        "2001:b28:f23c::/47",
+        "2001:b28:f23f::/48",
+        "2a0a:f280:203::/48",
       ],
     },
   };
