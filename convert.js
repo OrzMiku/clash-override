@@ -30,7 +30,8 @@ const REGIONS = [
   { code: "CA", name: "加拿大", regex: /(加拿大|CA|Canada|🇨🇦)/i },
   { code: "AU", name: "澳大利亚", regex: /(澳大利亚|AU|Australia|🇦🇺)/i },
   { code: "FR", name: "法国", regex: /(法国|FR|France|🇫🇷)/i },
-  { code: "NL", name: "荷兰", regex: /(荷兰|NL|Netherlands|🇳🇱)/i },
+  { code: "RU", name: "俄罗斯", regex: /(俄罗斯|RU|Russia|🇷🇺)/i },
+  { code: "TR", name: "土耳其", regex: /(土耳其|TR|Turkey|🇹🇷)/i }
 ];
 const FILTER_REGEX =
   /^(?!.*(官网|套餐|流量|expiring|剩余|时间|重置|URL|到期|过期|机场|group|sub|订阅|查询|续费|观看|频道|客服|M3U|车费|车友|上车|通知|公告|严禁|未知|Channel)).*$/i;
