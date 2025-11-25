@@ -216,6 +216,23 @@ function buildProxyGroups(
   // Filter out null region groups
   const valid_region_groups = region_groups.filter((group) => group !== null);
 
+  // unknown region group
+  const matched_proxies = new Set();
+  valid_region_groups.forEach((group) => {
+    group.proxies.forEach((name) => matched_proxies.add(name));
+  });
+  const other_proxies = proxies.filter(
+    (proxy) => !matched_proxies.has(proxy.name)
+  );
+  if (other_proxies.length > 0) {
+    valid_region_groups.push({
+      name: "未知地区",
+      type: "select",
+      icon: "https://cdn.jsdelivr.net/gh/Orz-3/mini@master/Color/UN.png",
+      proxies: other_proxies.map((proxy) => proxy.name),
+    });
+  }
+
   // main groups
   const main_group = {
     name: main_group_name,
