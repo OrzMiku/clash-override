@@ -31,7 +31,7 @@ const REGIONS = [
   { code: "AU", name: "澳大利亚", regex: /(澳大利亚|AU|Australia|🇦🇺)/i },
   { code: "FR", name: "法国", regex: /(法国|FR|France|🇫🇷)/i },
   { code: "RU", name: "俄罗斯", regex: /(俄罗斯|RU|Russia|🇷🇺)/i },
-  { code: "TR", name: "土耳其", regex: /(土耳其|TR|Turkey|🇹🇷)/i }
+  { code: "TR", name: "土耳其", regex: /(土耳其|TR|Turkey|🇹🇷)/i },
 ];
 const FILTER_REGEX =
   /^(?!.*(官网|套餐|流量|expiring|剩余|时间|重置|URL|到期|过期|机场|group|sub|订阅|查询|续费|观看|频道|客服|M3U|车费|车友|上车|通知|公告|严禁|未知|Channel)).*$/i;
@@ -51,7 +51,7 @@ function main(config) {
     proxies,
     REGIONS,
     MAIN_GROUP_NAME,
-    FEATURES.INCLUDE_ALL_PROXIES_IN_MAIN_GROUP
+    FEATURES.INCLUDE_ALL_PROXIES_IN_MAIN_GROUP,
   );
 
   const rules = buildRules(MAIN_GROUP_NAME);
@@ -114,6 +114,8 @@ function buildDns() {
   return {
     dns: {
       enable: true,
+      ipv6: true,
+      "prefer-h3": true,
       "respect-rules": true,
       "default-nameserver": ["tls://223.5.5.5", "tls://223.6.6.6"],
       nameserver: [
@@ -128,6 +130,9 @@ function buildDns() {
         "https://dns.alidns.com/dns-query",
         "https://doh.pub/dns-query",
       ],
+      "enhanced-mode": "fake-ip",
+      "fake-ip-range": "198.18.0.1/16",
+      "fake-ip-filter": ["rule-set:fakeipFilter", "rule-set:trackerslist"],
     },
   };
 }
@@ -199,7 +204,7 @@ function buildProxyGroups(
   proxies,
   regions,
   main_group_name,
-  include_all_proxies_in_main_group
+  include_all_proxies_in_main_group,
 ) {
   // region groups
   const region_groups = regions.map((region) => {
@@ -223,7 +228,7 @@ function buildProxyGroups(
     group.proxies.forEach((name) => matched_proxies.add(name));
   });
   const other_proxies = proxies.filter(
-    (proxy) => !matched_proxies.has(proxy.name)
+    (proxy) => !matched_proxies.has(proxy.name),
   );
   if (other_proxies.length > 0) {
     valid_region_groups.push({
@@ -302,6 +307,22 @@ function buildRules(main_group_name) {
         url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt",
         path: "./ruleset/applications.yaml",
       },
+      fakeipFilter: {
+        type: "http",
+        behavior: "domain",
+        format: "mrs",
+        interval: 86400,
+        url: "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@mihomo-ruleset/fakeip-filter.mrs",
+        path: "./ruleset/fakeip-filter.yaml",
+      },
+      trackerslist: {
+        type: "http",
+        behavior: "domain",
+        format: "mrs",
+        interval: 86400,
+        url: "https://cdn.jsdelivr.net/gh/DustinWin/ruleset_geodata@mihomo-ruleset/trackerslist.mrs",
+        path: "./ruleset/trackerslist.yaml",
+      },
       customProxy: {
         type: "http",
         behavior: "domain",
@@ -323,7 +344,7 @@ function buildRules(main_group_name) {
       "RULE-SET,applications,DIRECT",
       "DOMAIN,clash.razord.top,DIRECT",
       "DOMAIN,yacd.haishan.me,DIRECT",
-      "RULE-SET,private,DIRECT",
+      "RULE-SET,private,DIRECT,no-resolve",
       "RULE-SET,reject,REJECT",
       `RULE-SET,proxy,${main_group_name}`,
       "RULE-SET,direct,DIRECT",
